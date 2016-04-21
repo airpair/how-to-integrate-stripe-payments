@@ -20,7 +20,7 @@ In this tutorial I am going to introduce you a new way to integrate Stripe payme
 - **Cost efficient**: Hosting a complete server-side 24/7 can be a costly undertaking. This won't be a worry anymore: because the Noodlio Pay server is already hosted for you, you don't have to spend money on unused server capacity.
 - **Instantaneous**: Thanks to the Stripe setup, you'll see the funds transferred immediately to your Stripe Account
 - **Unlimited**: There are no restrictions on the number of requests that you can send through the Noodlio Pay server.
-- **Broad support**: You can charge your customers with any client-side language through `HTTP POST` requests (for instance `Angular`, `React`, `Javascript`, etc.). In addition, we support dedicated languages such as `CURL`, `Java`, `NodeJS`, `PHP`, `Python`, `Objective-C`, `Ruby` and `.NET`.
+- **Broad support**: You can charge your customers with any client-side language through `HTTP POST` requests (for instance `Angular`, `React`, `Javascript`, etc.). In addition, there is support for dedicated server-languages such as `CURL`, `Java`, `NodeJS`, `PHP`, `Python`, `Objective-C`, `Ruby` and `.NET`.
 - **Tested, pre-configured and maintained**: The team is constantly monitoring, testing and updating the server to conform to the latest developments.
 - **Secure**: The servers are secure and they never store any transaction data.
 
@@ -45,7 +45,7 @@ That's it. Our server is configured and ready to receive payments.
 
 ## 1. Obtain the Stripe token (`source`)
 
-The parameter `source` is a crucial parameter when charging clients with Stripe. This parameter can be either a token (which we will obtain in this exercise) or a customer ID (mostly used for recurring payments which we will discuss in another tutorials). As we will be charging the client's credit card, we'll therefore need to obtain the token. Note that when obtaining the token, the server also validates the credit card input of the user.
+The parameter `source` is a crucial parameter when charging clients with Stripe. This parameter can be either a token (which we will obtain in this exercise) or a customer ID (mostly used for recurring payments which we will discuss in another tutorial). As we will be charging the client's credit card, we'll therefore need to obtain the token. Note that when obtaining the token, the server also validates the credit card input of the user.
 
 There are two options to obtain a Stripe token:
 
