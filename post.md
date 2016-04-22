@@ -26,50 +26,73 @@ In this tutorial I am going to introduce you a new way to integrate Stripe payme
 
 # How it works
 
-## 0. Get your unique Stripe Account ID
+## 0. Stripe and Mashape Setup
 
-To use the API, you'll first need to [have a  Stripe account](https://www.stripe.com). After that, you'll need to retrieve your unique Stripe Account ID (field: `stripe_account`), which you can obtain on the following page after connecting with Noodlio Pay (you'll only need to do this once per mode):
+We first need to define a couple of constants in our app. If you are working with Angular/Ionic `v1.x`, head over to `app.js` and copy and paste the following:
+
+```
+// Stripe Payments API
+// Obtain from:
+// - https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe
+var NOODLIO_PAY_API_URL         = "https://noodlio-pay.p.mashape.com";
+var NOODLIO_PAY_API_KEY         = "<YOUR-MASHAPE-API-KEY>";
+
+// Stripe Account
+// Connect on both:
+// - https://www.noodl.io/pay/connect and
+// - https://www.noodl.io/pay/connect/test
+var STRIPE_ACCOUNT_ID           = "<YOUR-STRIPE-ACCOUNT-ID>"
+
+// Define whether you are in development mode (TEST_MODE: true) or production mode (TEST_MODE: false)
+var TEST_MODE = false;
+```
+
+The `NOODLIO_PAY_API_URL` is basically the location of the server and is fixed. The variable `TEST_MODE` simply takes the values `true` or `false` and defines whether we are in test mode (development) or production (actually charging the user). Now let's define two constants:
+
+**Mashape**
+
+To consume the Stripe Payments API, we'll need to obtain our unique `NOODLIO_PAY_API_KEY`. To do so, head over to [Mashape](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe) and click on the right "Get your API Keys and Start Hacking" or press on "Sign up free".
+
+[<img src="http://noodlio-templates.firebaseapp.com/noodlio-pay/img/mashape-api-keys.png">](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe)
+
+After you are signed in, you'll find your unique API Key in the request example on the [Stripe Payments API page](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe):
+
+```
+curl -X POST --include 'https://noodlio-pay.p.mashape.com/charge/token' \
+  -H 'X-Mashape-Key: <YOUR-MASHAPE-API-KEY>' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -H 'Accept: application/json' \
+  ... other values
+```
+
+Replace the `NOODLIO_PAY_API_KEY` with this unique identifier.
+
+**Stripe Account**
+
+If you haven't already [sign up for a Stripe Account](https://www.stripe.com). After that, you'll need to retrieve your unique Stripe Account ID (field: `stripe_account`), which you can obtain on the following pages (Note: you'll need to visit both links once):
 
 - For the production mode:
 [https://www.noodl.io/pay/connect](https://www.noodl.io/pay/connect)
 - For the development mode:
 [https://www.noodl.io/pay/connect/test](https://www.noodl.io/pay/connect/test)
 
-The unique Stripe Account ID looks something like `acct_12abcDEF34GhIJ5K`. Let's define this value in our application as follows:
-
-```
-var STRIPE_ACCOUNT_ID = "acct_12abcDEF34GhIJ5K"
-```
+The Stripe Account ID looks something like `acct_12abcDEF34GhIJ5K`. Replace the constant `STRIPE_ACCOUNT_ID` wherever you have defined it.
 
 That's it. Our server is configured and ready to receive payments.
 
 ## 1. Obtain the Stripe token (`source`)
 
-The parameter `source` is a crucial parameter when charging clients with Stripe. This parameter can be either a token (which we will obtain in this exercise) or a customer ID (mostly used for recurring payments which we will discuss in another tutorial). As we will be charging the client's credit card, we'll therefore need to obtain the token. Note that when obtaining the token, the server also validates the credit card input of the user.
+Now we can head over to the fun part and start integrating the payments in our application. To do so, we'll first need to obtain the crucial parameter `source`. This parameter can be either a token (which we will obtain in this exercise) or a customer ID (mostly used for recurring payments which we will discuss in another tutorial). As we will be charging the client's credit card, we'll therefore need to obtain the token. Note that when obtaining the token, the server also validates the credit card input of the user.
 
 There are two options to obtain a Stripe token:
 
 ### Option 1: Use the Stripe Payments API (Noodlio Pay)
 
-This corresponds to sending a `HTTP POST` request with the credit card input (`number`, `cvc`, `exp_month` and `exp_year`) to the route [`/tokens/create`](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe#tokens-create). To do so, we'll first need to define a couple of constants:
-
-```
-// These are fixed values, do not change this
-var NOODLIO_PAY_API_URL         = "https://noodlio-pay.p.mashape.com";
-var NOODLIO_PAY_API_KEY         = "3fEagjJCGAmshMqVnwTR70bVqG3yp1lerJNjsnTzx5ODeOa99V";
-
-// We have defined this already in Step 0.
-var STRIPE_ACCOUNT_ID = "acct_12abcDEF34GhIJ5K"
-
-// Define whether you are in development mode (TEST_MODE: true) or production mode (TEST_MODE: false)
-var TEST_MODE = false;
-```
-
-The `NOODLIO_PAY_API_URL` is basically the location of the server. Since it is hosted through Mashape, we'll need to add authentication headers in our request. We can do this by using the `NOODLIO_PAY_API_KEY` and including it in the headers of the `$http` method (see subsection **Extend the HTTP headers**). The variable `TEST_MODE` simply takes the values `true` or `false` and defines whether we are in test mode (development) or production (actually charging the user).
+This corresponds to sending a `HTTP POST` request with the credit card input (`number`, `cvc`, `exp_month` and `exp_year`) to the route [`/tokens/create`](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe#tokens-create) of the [Stripe Payments API (Noodlio Pay)](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe). For that we'll need to implement a custom form in which your customer can add their credit card details. The form data is subsequently send to the Stripe Payments API and returns the token upon success.
 
 **Add the HTML form**
 
-Next, we'll need to integrate a form where the user can enter their credit card details. In Angular `v1.x` we can do this as follows:
+Let's start with integrating the form with the credit card details. In Angular `v1.x` we can do this as follows:
 
 ```
 <div ng-controller="ExampleCtrl">
@@ -106,7 +129,7 @@ and a Submit button that is linked to our controller `ExampleCtrl` through the f
 
 **Extend the `HTTP` headers**
 
-To make the HTTP requests with Angular, we'll need to include `$http` in our controller as a dependency. We define our controller therefore as follows:
+To send the FormData to the Stripe Payments API, we'll need to make a HTTP request to the `NOODLIO_PAY_API_URL`, which in Angular `v1.x` can be achieved with the dependency `$http`. We define our controller therefore as follows:
 
 ```
 .controller('ExampleCtrl', ['$scope', '$http', function($scope, $http) {
@@ -115,14 +138,16 @@ To make the HTTP requests with Angular, we'll need to include `$http` in our con
 
 }]);
 ```
+*Note: for best practices you should do this in a factory or service*
 
-As mentioned before, we'll also need to add some details in the headers of the request, most importantly to authenticate ourselves in the session and to make sure that non-foreign requests are send to the server. If you look at the [documentation](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe#charge-token), the first part of the cURL request looks something like this:
+Since it is hosted through Mashape, we'll also need to add authentication headers in our request. We can do this by using the `NOODLIO_PAY_API_KEY` and including it in the headers of the `$http` method. If you look at the [documentation of the route `charge/token`](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe#charge-token), the first part of the cURL request looks something like this:
 
 ```
 curl -X POST --include 'https://noodlio-pay.p.mashape.com/charge/token'
   -H 'X-Mashape-Key: 3fEagjJCGAmshMqVnwTR70bVqG3yp1lerJNjsnTzx5ODeOa99V'
   -H 'Content-Type: application/x-www-form-urlencoded'
   -H 'Accept: application/json'
+  ... other variables
 ```
 From that we can see that in order to send requests to the API, we'll need to include the headers `X-Mashape-Key`, `Content-Type` and `Accept`. In Angular `v1.x` this translates to:
 
@@ -200,6 +225,9 @@ The integration of the checkout form is to be discussed in another tutorial. If 
 Now that you have obtained the token (`source`) from Step 1, let's proceed with charging the user. We can do so by sending another `HTTP POST` request to another route of the Stripe Payments API: [`charge/token`](https://market.mashape.com/noodlio/noodlio-pay-smooth-payments-with-stripe#charge-token). As we can read from the docs, the form encode parameters are in this case `amount`, `description` (optional), `currency` and `stripe_account`. With the integration in Step 1 behind us, this is now a piece of cake and corresponds to:
 
 ```
+// part of ExampleCtrl
+// includes also the header extensions at the top
+
 // charge the customer with the token from Step 1
 function proceedCharge(token) {
 
